@@ -57,7 +57,7 @@ Installation
 
 Clone the repository
 
-git clone https://github.com/your-username/space-plane-shooter.git
+git clone [https://github.com/your-username/space-plane-shooter.git](https://github.com/saqib783/-balloon-shooter-game-js.git)
 
 
 Open the project
