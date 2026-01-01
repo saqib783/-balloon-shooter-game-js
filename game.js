@@ -1,94 +1,113 @@
+
 let config = {
     type: Phaser.AUTO,
     width: 800,
     height: 600,
     physics: {
         default: 'arcade',
-        arcade: {
-            gravity: { y: 0 }
-        }
+        arcade: { gravity: { y: 0 } }
     },
-    scene: {
-        preload,
-        create,
-        update
-    }
+    scene: { preload, create, update }
 };
 
 let game = new Phaser.Game(config);
-let plane, bullets, balloons, cursors, spaceKey;
+
+let plane, bullets, balloons, spaceKey;
 let score = 0;
 let scoreText;
-let bgMusic;
-
 
 function preload() {
-    this.load.image('sky', 'https://labs.phaser.io/assets/skies/space3.png');
-    this.load.image('plane', 'https://labs.phaser.io/assets/sprites/ship.png');
-    this.load.image('balloon', 'https://labs.phaser.io/assets/sprites/purple_ball.png');
-    this.load.image('bullet', 'https://labs.phaser.io/assets/sprites/bullet.png');
-  this.load.audio('bgMusic', 'https://assets.mixkit.co/music/preview/mixkit-game-level-music-689.mp3');
+  
+    this.load.image('sky','https://i.imgur.com/3e5L7dA.png'); 
+    this.load.image('plane','https://i.imgur.com/n9YtY8A.png'); 
+    this.load.image('balloon','https://i.imgur.com/7QKp3ms.png'); 
+    this.load.image('bullet','https://i.imgur.com/5bXwU1g.png'); 
+    this.load.image('cart','https://i.imgur.com/y6q3cR0.png'); 
+    this.load.image('floor','https://i.imgur.com/1P1BBuH.png'); 
 }
 
 function create() {
-    this.add.image(400, 300, 'sky');
-    plane = this.physics.add.image(100, 300, 'plane');
-    plane.setScale(1);
-    plane.setCollideWorldBounds(true);
+    this.add.image(400, 300, 'sky').setScale(1);
 
-    cursors = this.input.keyboard.createCursorKeys();
-    spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+    this.floor = this.add.tileSprite(400, 550, 800, 100, 'floor');
+
+    this.cart = this.add.image(740, 500, 'cart').setScale(0.6);
+
+    balloons = this.physics.add.group();
+
+    this.time.addEvent({
+        delay: 1500,
+        callback: spawnBalloon,
+        callbackScope: this,
+        loop: true
+    });
+
+    plane = this.physics.add.image(100, 300, 'plane').setScale(0.8);
+    plane.setImmovable(true);
+    plane.body.allowGravity = false;
 
     bullets = this.physics.add.group({
         defaultKey: 'bullet',
         maxSize: 20
     });
 
-    balloons = this.physics.add.group();
-    this.time.addEvent({
-        delay: 1000,
-           callback: () => {
-            let balloon = balloons.create(800, Phaser.Math.Between(50, 550), 'balloon');
-            balloon.setVelocityX(-150);
-            balloon.body.setAllowGravity(false);
-        },
-        loop: true
+    spaceKey = this.input.keyboard.addKey(
+        Phaser.Input.Keyboard.KeyCodes.SPACE
+    );
+
+    scoreText = this.add.text(16, 16, 'Score: 0', {
+        fontSize: '24px',
+        fill: '#fff'
     });
 
-  
-    this.physics.add.overlap(bullets, balloons, hitBalloon, null, this);
+    this.physics.add.overlap(
+        bullets,
+        balloons,
+        hitBalloon,
+        null,
+        this
+    );
+}
+
+function spawnBalloon() {
+    let balloon = balloons.create(
+        this.cart.x,
+        this.cart.y - 50,
+        'balloon'
+    );
+    balloon.setScale(0.4);
+    balloon.setVelocityY(-150);
+}
+
+function fireBullet() {
+    let bullet = bullets.get(plane.x + 40, plane.y);
+    if (bullet) {
+        bullet.setActive(true);
+        bullet.setVisible(true);
+        bullet.body.allowGravity = false;
+        bullet.setVelocityX(400);
+    }
 }
 
 function hitBalloon(bullet, balloon) {
     bullet.destroy();
     balloon.destroy();
     score += 10;
-    console.log("Score:", score);
+    scoreText.setText('Score: ' + score);
 }
 
 function update() {
-    if (cursors.up.isDown) {
-        plane.setVelocityY(-200);
-    } else if (cursors.down.isDown) {
-        plane.setVelocityY(200);
-    } else {
-        plane.setVelocityY(0);
-    }
+    this.floor.tilePositionX += 2;
 
     if (Phaser.Input.Keyboard.JustDown(spaceKey)) {
-        let bullet = bullets.get(plane.x + 40, plane.y);
-        if (bullet) {
-            bullet.setActive(true);
-            bullet.setVisible(true);
-            bullet.body.velocity.x = 400;
-        }
+        fireBullet();
     }
-     bullets.children.each(bullet => {
-        if (bullet.active && bullet.x > 850) {
-         
-            bullet.setActive(false);
-            bullet.setVisible(false);
-            bullet.body.velocity.x = 0;
-        }
+
+    balloons.children.iterate(b => {
+        if (b && b.y < -50) b.destroy();
+    });
+
+    bullets.children.iterate(b => {
+        if (b && b.x > 800) b.destroy();
     });
 }
